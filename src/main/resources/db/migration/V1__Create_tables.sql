@@ -1,7 +1,7 @@
 CREATE TABLE categories (
     id          BIGSERIAL    PRIMARY KEY,
-    name        VARCHAR(255) NOT NULL,
-    description TEXT
+    name        VARCHAR(100) NOT NULL,
+    description VARCHAR(255)
 );
 
 -- Inserir categorias
@@ -14,8 +14,8 @@ INSERT INTO categories (name, description) VALUES
 
 CREATE TABLE products (
     id          BIGSERIAL    PRIMARY KEY,
-    name        VARCHAR(255) NOT NULL,
-    description TEXT,
+    name        VARCHAR(100) NOT NULL,
+    description VARCHAR(255),
     price       DECIMAL(19, 2) NOT NULL,
     status      BOOLEAN      NOT NULL,
     code        VARCHAR(50),
