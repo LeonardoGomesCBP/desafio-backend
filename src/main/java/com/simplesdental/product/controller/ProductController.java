@@ -1,13 +1,19 @@
 package com.simplesdental.product.controller;
 
+import com.simplesdental.product.dto.PaginationDTO;
+import com.simplesdental.product.dto.ProductDTO;
 import com.simplesdental.product.model.Product;
 import com.simplesdental.product.service.ProductService;
+import com.simplesdental.product.utils.PaginationUtils;
 import jakarta.validation.Valid;
-import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,33 +30,23 @@ public class ProductController {
     }
 
     @GetMapping
-    @Transactional
-    public List<Product> getAllProducts() {
-        List<Product> products = productService.findAll();
-        products.forEach(product -> {
-            if (product.getCategory() != null) {
-                Hibernate.initialize(product.getCategory());
-            }
-        });
-        return products;
+    public PaginationDTO<Product> getAllProducts(
+            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return productService.findAllPaginated(pageable);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Product> getProductById(@PathVariable Long id) {
         return productService.findById(id)
-                .map(product -> {
-                    if (product.getCategory() != null) {
-                        Hibernate.initialize(product.getCategory());
-                    }
-                    return ResponseEntity.ok(product);
-                })
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Product createProduct(@Valid @RequestBody Product product) {
-        return productService.save(product);
+    public ProductDTO createProduct(@Valid @RequestBody Product product) {
+        Product savedProduct = productService.save(product);
+        return ProductDTO.fromEntity(savedProduct);
     }
 
     @PutMapping("/{id}")
@@ -71,5 +67,12 @@ public class ProductController {
                     return ResponseEntity.noContent().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/categories/{categoryId}")
+    public PaginationDTO<ProductDTO> getProductsByCategory(
+            @PathVariable Long categoryId,
+            @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+        return productService.findByCategoryIdPaginated(categoryId, pageable);
     }
 }

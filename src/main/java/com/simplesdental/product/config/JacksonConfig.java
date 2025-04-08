@@ -1,7 +1,9 @@
 package com.simplesdental.product.config;
 
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -14,17 +16,33 @@ public class JacksonConfig {
     public MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter() {
         MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
         ObjectMapper mapper = converter.getObjectMapper();
-        
+
         // Configure Hibernate module
         Hibernate6Module hibernateModule = new Hibernate6Module();
         hibernateModule.disable(Hibernate6Module.Feature.USE_TRANSIENT_ANNOTATION);
         hibernateModule.configure(Hibernate6Module.Feature.FORCE_LAZY_LOADING, false);
         hibernateModule.configure(Hibernate6Module.Feature.SERIALIZE_IDENTIFIER_FOR_LAZY_NOT_LOADED_OBJECTS, true);
-        
+
         mapper.registerModule(hibernateModule);
         mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
-        
+
         converter.setObjectMapper(mapper);
         return converter;
     }
+    @Bean
+    @Primary
+    public ObjectMapper objectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+
+        mapper.registerModule(new JavaTimeModule());
+
+        mapper.registerModule(new Hibernate6Module());
+
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+
+        return mapper;
+    }
+
 }

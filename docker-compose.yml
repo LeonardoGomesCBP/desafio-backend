@@ -11,6 +11,7 @@ services:
       db:
         condition: service_healthy
 
+
   db:
     image: postgres:15-alpine
     ports:
@@ -28,3 +29,17 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+    driver: local
