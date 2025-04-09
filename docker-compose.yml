@@ -7,6 +7,9 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/produto
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
+      - LOG_PATH=/app/logs
+    volumes:
+      - ./logs:/app/logs
     depends_on:
       db:
         condition: service_healthy

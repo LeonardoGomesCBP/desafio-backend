@@ -8,7 +8,6 @@ import com.simplesdental.product.dto.UserDTO;
 import com.simplesdental.product.model.User;
 import com.simplesdental.product.repository.UserRepository;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
+import java.util.Map;
 
 @Service
 public class AuthService {
@@ -29,7 +29,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
-    private final Logger logger = LoggerFactory.getLogger(AuthService.class);
+    private final Logger logger = LoggingService.getLogger(AuthService.class);
 
     @Autowired
     public AuthService(
@@ -45,40 +45,75 @@ public class AuthService {
 
     @Transactional
     public AuthResponseDTO login(AuthRequestDTO request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        request.getEmail(),
-                        request.getPassword()
-                )
-        );
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new ExceptionResponseDTO("Usuário não encontrado"));
+        String operationId = LoggingService.startOperation(logger, "user_login");
+        long startTime = System.currentTimeMillis();
 
-        UserDetails userDetails = createUserDetails(user);
-        String jwtToken = jwtService.generateToken(userDetails);
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            request.getEmail(),
+                            request.getPassword()
+                    )
+            );
 
-        return new AuthResponseDTO(jwtToken, UserDTO.fromEntity(user));
+            User user = userRepository.findByEmail(request.getEmail())
+                    .orElseThrow(() -> {
+                        logger.warn("User not found during login: {}", request.getEmail());
+                        return new ExceptionResponseDTO("Usuário não encontrado");
+                    });
+
+            UserDetails userDetails = createUserDetails(user);
+            String jwtToken = jwtService.generateToken(userDetails);
+
+            LoggingService.logWithFields(logger, "INFO", "Login successful",
+                    Map.of(
+                            "userId", user.getId(),
+                            "role", user.getRole()
+                    ));
+
+            return new AuthResponseDTO(jwtToken, UserDTO.fromEntity(user));
+
+        } catch (Exception e) {
+            LoggingService.logError(logger, "user_login", e);
+            throw e;
+        } finally {
+            LoggingService.endOperation(logger, "user_login", startTime);
+        }
     }
 
     @Transactional
     public AuthResponseDTO register(RegisterRequestDTO request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new ExceptionResponseDTO("Email já está em uso");
+        String operationId = LoggingService.startOperation(logger, "user_register");
+        long startTime = System.currentTimeMillis();
+
+        try {
+            if (userRepository.existsByEmail(request.getEmail())) {
+                logger.warn("Email already in use during registration: {}", request.getEmail());
+                throw new ExceptionResponseDTO("Email já está em uso");
+            }
+
+            User user = User.builder()
+                    .name(request.getName())
+                    .email(request.getEmail())
+                    .password(passwordEncoder.encode(request.getPassword()))
+                    .role("user")
+                    .build();
+
+            User savedUser = userRepository.save(user);
+
+            UserDetails userDetails = createUserDetails(savedUser);
+            String jwtToken = jwtService.generateToken(userDetails);
+
+            logger.info("User registered successfully: {}", savedUser.getId());
+
+            return new AuthResponseDTO(jwtToken, UserDTO.fromEntity(savedUser));
+
+        } catch (Exception e) {
+            LoggingService.logError(logger, "user_register", e);
+            throw e;
+        } finally {
+            LoggingService.endOperation(logger, "user_register", startTime);
         }
-
-        User user = User.builder()
-                .name(request.getName())
-                .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword()))
-                .role("user")
-                .build();
-
-        User savedUser = userRepository.save(user);
-
-        UserDetails userDetails = createUserDetails(savedUser);
-        String jwtToken = jwtService.generateToken(userDetails);
-
-        return new AuthResponseDTO(jwtToken, UserDTO.fromEntity(savedUser));
     }
 
     @Transactional(readOnly = true)
@@ -87,7 +122,10 @@ public class AuthService {
         String email = authentication.getName();
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ExceptionResponseDTO("Usuário não encontrado"));
+                .orElseThrow(() -> {
+                    logger.warn("User not found in context: {}", email);
+                    return new ExceptionResponseDTO("Usuário não encontrado");
+                });
 
         return UserDTO.fromEntity(user);
     }

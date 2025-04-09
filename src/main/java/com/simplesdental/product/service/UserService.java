@@ -5,13 +5,13 @@ import com.simplesdental.product.dto.ExceptionResponseDTO;
 import com.simplesdental.product.model.User;
 import com.simplesdental.product.repository.UserRepository;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -19,7 +19,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final Logger logger = LoggerFactory.getLogger(UserService.class);
+    private final Logger logger = LoggingService.getLogger(UserService.class);
 
     @Autowired
     public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
@@ -44,33 +44,73 @@ public class UserService {
 
     @Transactional
     public User save(User user) {
-        if (user.getId() == null && userRepository.existsByEmail(user.getEmail())) {
-            throw new ExceptionResponseDTO("Email já está em uso: " + user.getEmail());
-        }
+        try {
+            if (user.getId() == null) {
+                LoggingService.logWithFields(logger, "INFO", "Creating new user",
+                        Map.of(
+                                "email", user.getEmail(),
+                                "role", user.getRole()
+                        ));
 
-        if (user.getPassword() != null && !user.getPassword().isEmpty() &&
-                (user.getId() == null || !user.getPassword().startsWith("$2a$"))) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-        }
+                if (userRepository.existsByEmail(user.getEmail())) {
+                    LoggingService.logWithField(logger, "WARN", "User registration failed - email already exists", "email", user.getEmail());
+                    throw new ExceptionResponseDTO("Email já está em uso: " + user.getEmail());
+                }
+            } else {
+                logger.info("Updating existing user: {}", user.getId());
+            }
 
-        return userRepository.save(user);
+            if (user.getPassword() != null && !user.getPassword().isEmpty() &&
+                    (user.getId() == null || !user.getPassword().startsWith("$2a$"))) {
+                user.setPassword(passwordEncoder.encode(user.getPassword()));
+            }
+
+            User savedUser = userRepository.save(user);
+            logger.info("User saved successfully: {}", savedUser.getId());
+            return savedUser;
+
+        } catch (Exception e) {
+            LoggingService.logError(logger, "user_save", e);
+            throw e;
+        }
     }
 
     @Transactional
     public void deleteById(Long id) {
-        userRepository.deleteById(id);
+        logger.info("Deleting user: {}", id);
+        try {
+            userRepository.deleteById(id);
+            logger.info("User deleted successfully: {}", id);
+        } catch (Exception e) {
+            logger.error("Failed to delete user: {}", id, e);
+            throw e;
+        }
     }
 
     @Transactional
     public User updatePassword(String email, PasswordUpdateDTO passwordDTO) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ExceptionResponseDTO("Usuário não encontrado"));
+        logger.info("Password change requested for user: {}", email);
 
-        if (!passwordEncoder.matches(passwordDTO.getCurrentPassword(), user.getPassword())) {
-            throw new ExceptionResponseDTO("Senha atual incorreta");
+        try {
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> {
+                        logger.warn("Password change failed - user not found: {}", email);
+                        return new ExceptionResponseDTO("Usuário não encontrado");
+                    });
+
+            if (!passwordEncoder.matches(passwordDTO.getCurrentPassword(), user.getPassword())) {
+                logger.warn("Password change failed - incorrect current password: {}", email);
+                throw new ExceptionResponseDTO("Senha atual incorreta");
+            }
+
+            user.setPassword(passwordEncoder.encode(passwordDTO.getNewPassword()));
+            User updatedUser = userRepository.save(user);
+            logger.info("Password changed successfully for user: {}", email);
+            return updatedUser;
+
+        } catch (Exception e) {
+            LoggingService.logError(logger, "password_update", e);
+            throw e;
         }
-
-        user.setPassword(passwordEncoder.encode(passwordDTO.getNewPassword()));
-        return userRepository.save(user);
     }
 }

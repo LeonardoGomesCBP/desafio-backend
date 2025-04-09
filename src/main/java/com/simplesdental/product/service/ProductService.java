@@ -6,7 +6,6 @@ import com.simplesdental.product.dto.ProductDTO;
 import com.simplesdental.product.model.Product;
 import com.simplesdental.product.repository.ProductRepository;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -17,13 +16,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
 public class ProductService {
 
     private final ProductRepository productRepository;
-    private final Logger logger = LoggerFactory.getLogger(ProductService.class);
+    private final Logger logger = LoggingService.getLogger(ProductService.class);
 
     @Autowired
     public ProductService(ProductRepository productRepository) {
@@ -42,6 +42,10 @@ public class ProductService {
     @Cacheable(value = "productsPaginated", key = "#pageable.pageNumber + '-' + #pageable.pageSize + '-' + #pageable.sort")
     @Transactional(readOnly = true)
     public PaginationDTO<Product> findAllPaginated(Pageable pageable) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("Cache miss for paginated products");
+        }
+
         Page<Product> page = productRepository.findAll(pageable);
 
         return new PaginationDTO<>(
@@ -63,38 +67,96 @@ public class ProductService {
             @CacheEvict(value = "productsByCategory", allEntries = true)
     })
     public Product save(Product product) throws Exception {
-        if (product.getCode() != null && productRepository.existsByCode(product.getCode())) {
-            throw new ExceptionResponseDTO("Produto com o código '" + product.getCode() + "' já existe.");
-        }
+        long startTime = System.currentTimeMillis();
+        String operationId = LoggingService.startOperation(logger, "product_save");
 
-        if (product.getStatus() == null) {
-            product.setStatus(true);
-        }
+        try {
+            LoggingService.logWithFields(logger, "INFO", "Creating new product",
+                    Map.of(
+                            "productName", product.getName(),
+                            "categoryId", product.getCategory() != null ? product.getCategory().getId() : "null"
+                    ));
 
-        return productRepository.save(product);
+            if (product.getCode() != null && productRepository.existsByCode(product.getCode())) {
+                LoggingService.logWithField(logger, "WARN", "Product with duplicate code", "code", product.getCode());
+                throw new ExceptionResponseDTO("Produto com o código '" + product.getCode() + "' já existe.");
+            }
+
+            if (product.getStatus() == null) {
+                product.setStatus(true);
+            }
+
+            Product savedProduct = productRepository.save(product);
+
+            LoggingService.logWithFields(logger, "INFO", "Product saved successfully",
+                    Map.of(
+                            "productId", savedProduct.getId(),
+                            "productName", savedProduct.getName()
+                    ));
+
+            return savedProduct;
+
+        } catch (Exception e) {
+            LoggingService.logError(logger, "product_save", e);
+            throw e;
+        } finally {
+            LoggingService.endOperation(logger, "product_save", startTime);
+        }
     }
 
     public Product update(Long id, Product product) throws Exception {
-        Optional<Product> existingProductOpt = productRepository.findById(id);
-        if (!existingProductOpt.isPresent()) {
-            throw new ExceptionResponseDTO("Produto não encontrado com ID: " + id);
+        long startTime = System.currentTimeMillis();
+        String operationId = LoggingService.startOperation(logger, "product_update");
+
+        try {
+            LoggingService.logWithFields(logger, "INFO", "Updating product",
+                    Map.of(
+                            "productId", id,
+                            "productName", product.getName()
+                    ));
+
+            Optional<Product> existingProductOpt = productRepository.findById(id);
+            if (!existingProductOpt.isPresent()) {
+                LoggingService.logWithField(logger, "WARN", "Product not found for update", "productId", id);
+                throw new ExceptionResponseDTO("Produto não encontrado com ID: " + id);
+            }
+
+            Product existingProduct = existingProductOpt.get();
+
+            if (product.getCode() != null &&
+                    !product.getCode().equals(existingProduct.getCode()) &&
+                    productRepository.existsByCode(product.getCode())) {
+                LoggingService.logWithFields(logger, "WARN", "Attempt to update product with already existing code",
+                        Map.of(
+                                "productId", id,
+                                "existingCode", existingProduct.getCode(),
+                                "newCode", product.getCode()
+                        ));
+                throw new ExceptionResponseDTO("Produto com o código '" + product.getCode() + "' já existe.");
+            }
+
+            product.setId(id);
+
+            if (product.getStatus() == null) {
+                product.setStatus(existingProduct.getStatus() != null ? existingProduct.getStatus() : true);
+            }
+
+            Product updatedProduct = productRepository.save(product);
+
+            LoggingService.logWithFields(logger, "INFO", "Product updated successfully",
+                    Map.of(
+                            "productId", updatedProduct.getId(),
+                            "productName", updatedProduct.getName()
+                    ));
+
+            return updatedProduct;
+
+        } catch (Exception e) {
+            LoggingService.logError(logger, "product_update", e);
+            throw e;
+        } finally {
+            LoggingService.endOperation(logger, "product_update", startTime);
         }
-
-        Product existingProduct = existingProductOpt.get();
-
-        if (product.getCode() != null &&
-                !product.getCode().equals(existingProduct.getCode()) &&
-                productRepository.existsByCode(product.getCode())) {
-            throw new ExceptionResponseDTO("Produto com o código '" + product.getCode() + "' já existe.");
-        }
-
-        product.setId(id);
-
-        if (product.getStatus() == null) {
-            product.setStatus(existingProduct.getStatus() != null ? existingProduct.getStatus() : true);
-        }
-
-        return productRepository.save(product);
     }
 
     @Caching(evict = {
@@ -103,7 +165,15 @@ public class ProductService {
             @CacheEvict(value = "productsByCategory", allEntries = true)
     })
     public void deleteById(Long id) {
-        productRepository.deleteById(id);
+        logger.info("Deleting product: {}", id);
+
+        try {
+            productRepository.deleteById(id);
+            logger.info("Product deleted successfully: {}", id);
+        } catch (Exception e) {
+            logger.error("Failed to delete product: {}", id, e);
+            throw e;
+        }
     }
 
     @Transactional(readOnly = true)
@@ -114,7 +184,6 @@ public class ProductService {
     @Cacheable(value = "productsByCategory", key = "#categoryId + '-' + #pageable.pageNumber + '-' + #pageable.pageSize + '-' + #pageable.sort")
     @Transactional(readOnly = true)
     public PaginationDTO<ProductDTO> findByCategoryIdPaginated(Long categoryId, Pageable pageable) {
-
         Page<ProductDTO> productPage = productRepository.findByCategoryId(categoryId, pageable)
                 .map(ProductDTO::fromEntity);
 
