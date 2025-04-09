@@ -37,11 +37,11 @@ public class ProductServiceTest {
         product.setDescription("Test Description");
         product.setPrice(new BigDecimal("19.99"));
         product.setStatus(true);
-        product.setCode("TP001");
+        product.setCode(1);
     }
 
     @Test
-    void shouldSaveProduct() {
+    void shouldSaveProduct() throws Exception {
         when(productRepository.save(any(Product.class))).thenReturn(product);
 
         Product savedProduct = productService.save(product);

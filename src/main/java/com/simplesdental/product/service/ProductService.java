@@ -1,5 +1,6 @@
 package com.simplesdental.product.service;
 
+import com.simplesdental.product.dto.ExceptionResponseDTO;
 import com.simplesdental.product.dto.PaginationDTO;
 import com.simplesdental.product.dto.ProductDTO;
 import com.simplesdental.product.model.Product;
@@ -61,7 +62,38 @@ public class ProductService {
             @CacheEvict(value = "productsPaginated", allEntries = true),
             @CacheEvict(value = "productsByCategory", allEntries = true)
     })
-    public Product save(Product product) {
+    public Product save(Product product) throws Exception {
+        if (product.getCode() != null && productRepository.existsByCode(product.getCode())) {
+            throw new ExceptionResponseDTO("Produto com o código '" + product.getCode() + "' já existe.");
+        }
+
+        if (product.getStatus() == null) {
+            product.setStatus(true);
+        }
+
+        return productRepository.save(product);
+    }
+
+    public Product update(Long id, Product product) throws Exception {
+        Optional<Product> existingProductOpt = productRepository.findById(id);
+        if (!existingProductOpt.isPresent()) {
+            throw new ExceptionResponseDTO("Produto não encontrado com ID: " + id);
+        }
+
+        Product existingProduct = existingProductOpt.get();
+
+        if (product.getCode() != null &&
+                !product.getCode().equals(existingProduct.getCode()) &&
+                productRepository.existsByCode(product.getCode())) {
+            throw new ExceptionResponseDTO("Produto com o código '" + product.getCode() + "' já existe.");
+        }
+
+        product.setId(id);
+
+        if (product.getStatus() == null) {
+            product.setStatus(existingProduct.getStatus() != null ? existingProduct.getStatus() : true);
+        }
+
         return productRepository.save(product);
     }
 

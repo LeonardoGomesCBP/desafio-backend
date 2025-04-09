@@ -1,14 +1,7 @@
 package com.simplesdental.product.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -32,23 +25,25 @@ import java.math.BigDecimal;
 @EqualsAndHashCode(exclude = "category")
 public class Product extends AbstractEntity<Long> {
 
-    @NotBlank
-    @Size(max = 100)
+    @NotBlank(message = "Nome não pode ser vazio.")
+    @Size(max = 100, message = "Nome deve ter no máximo 100 caracteres.")
     private String name;
 
-    @Size(max = 255)
+    @Size(max = 255, message = "Descrição deve ter no máximo 255 caracteres.")
     private String description;
 
-    @NotNull
-    @Positive
+    @NotNull(message = "Preço não pode ser nulo.")
+    @Positive(message = "Preço deve ser positivo")
     private BigDecimal price;
 
-    @NotNull
+    @NotNull(message = "Status não pode ser nulo")
     private Boolean status;
 
-    private String code;
+    @NotNull(message = "Código não pode ser nulo")
+    @Column(unique = true)
+    private Integer code;
 
-    @NotNull
+    @NotNull(message = "Categoria não pode ser nula.")
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "category_id")
     @JsonIgnoreProperties({"products"})

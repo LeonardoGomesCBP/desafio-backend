@@ -1,7 +1,6 @@
 package com.simplesdental.product.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -24,11 +23,11 @@ import java.util.List;
 @EqualsAndHashCode(exclude = "products")
 public class Category extends AbstractEntity<Long> {
 
-    @NotBlank
+    @NotBlank(message = "Nome não pode ser vazio.")
     @Size(max = 100)
     private String name;
 
-    @Size(max = 255)
+    @Size(max = 255, message = "Descrição deve ter no máximo 255 caracteres.")
     private String description;
 
     @OneToMany(mappedBy = "category")

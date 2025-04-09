@@ -20,5 +20,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     @EntityGraph(attributePaths = {"category"})
     Page<Product> findByCategoryId(Long categoryId, Pageable pageable);
 
+    boolean existsByCode(Integer code);
+
+
 
 }
