@@ -67,7 +67,7 @@ public class ProductDTO implements Serializable {
                 Integer numericCode = Integer.parseInt(this.code.substring(5));
                 product.setCode(numericCode);
             } catch (NumberFormatException e) {
-                throw new ExceptionResponseDTO("Código inválido: " + this.code);
+                throw new ExceptionResponse("Código inválido: " + this.code);
             }
         }
 

@@ -1,7 +1,7 @@
 package com.simplesdental.product.service;
 
 import com.simplesdental.product.dto.AuthDTOs.PasswordUpdateDTO;
-import com.simplesdental.product.dto.ExceptionResponseDTO;
+import com.simplesdental.product.dto.ExceptionResponse;
 import com.simplesdental.product.model.User;
 import com.simplesdental.product.repository.UserRepository;
 import org.slf4j.Logger;
@@ -54,7 +54,7 @@ public class UserService {
 
                 if (userRepository.existsByEmail(user.getEmail())) {
                     LoggingService.logWithField(logger, "WARN", "User registration failed - email already exists", "email", user.getEmail());
-                    throw new ExceptionResponseDTO("Email já está em uso: " + user.getEmail());
+                    throw new ExceptionResponse("Email já está em uso: " + user.getEmail());
                 }
             } else {
                 logger.info("Updating existing user: {}", user.getId());
@@ -95,12 +95,12 @@ public class UserService {
             User user = userRepository.findByEmail(email)
                     .orElseThrow(() -> {
                         logger.warn("Password change failed - user not found: {}", email);
-                        return new ExceptionResponseDTO("Usuário não encontrado");
+                        return new ExceptionResponse("Usuário não encontrado");
                     });
 
             if (!passwordEncoder.matches(passwordDTO.getCurrentPassword(), user.getPassword())) {
                 logger.warn("Password change failed - incorrect current password: {}", email);
-                throw new ExceptionResponseDTO("Senha atual incorreta");
+                throw new ExceptionResponse("Senha atual incorreta");
             }
 
             user.setPassword(passwordEncoder.encode(passwordDTO.getNewPassword()));

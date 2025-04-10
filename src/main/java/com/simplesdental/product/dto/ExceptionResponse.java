@@ -6,8 +6,8 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class ExceptionResponseDTO extends RuntimeException {
-    public ExceptionResponseDTO(String message) {
+public class ExceptionResponse extends RuntimeException {
+    public ExceptionResponse(String message) {
         super(message);
     }
 }

@@ -1,6 +1,6 @@
 package com.simplesdental.product.config;
 
-import com.simplesdental.product.dto.ExceptionResponseDTO;
+import com.simplesdental.product.dto.ExceptionResponse;
 import com.simplesdental.product.service.LoggingService;
 import org.slf4j.Logger;
 import org.springframework.beans.TypeMismatchException;
@@ -39,8 +39,8 @@ public class ValidationExceptionHandler {
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
-    @ExceptionHandler(ExceptionResponseDTO.class)
-    public ResponseEntity<Map<String, Object>> handleCustomException(ExceptionResponseDTO ex, WebRequest request) {
+    @ExceptionHandler(ExceptionResponse.class)
+    public ResponseEntity<Map<String, Object>> handleCustomException(ExceptionResponse ex, WebRequest request) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", LocalDateTime.now().toString());
         body.put("message", ex.getMessage());

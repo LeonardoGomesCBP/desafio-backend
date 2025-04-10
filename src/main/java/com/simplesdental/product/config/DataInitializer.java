@@ -45,7 +45,6 @@ public class DataInitializer implements ApplicationRunner {
                 User admin = User.builder()
                         .name("Admin")
                         .email(adminEmail)
-                        // of course in real situations we should never set passwords hardcoded like that
                         .password(passwordEncoder.encode("KMbT%5wT*R!46i@@YHqx"))
                         .role("admin")
                         .build();

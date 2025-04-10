@@ -3,7 +3,7 @@ package com.simplesdental.product.service;
 import com.simplesdental.product.dto.AuthDTOs.AuthRequestDTO;
 import com.simplesdental.product.dto.AuthDTOs.AuthResponseDTO;
 import com.simplesdental.product.dto.AuthDTOs.RegisterRequestDTO;
-import com.simplesdental.product.dto.ExceptionResponseDTO;
+import com.simplesdental.product.dto.ExceptionResponse;
 import com.simplesdental.product.dto.UserDTO;
 import com.simplesdental.product.model.User;
 import com.simplesdental.product.repository.UserRepository;
@@ -59,7 +59,7 @@ public class AuthService {
             User user = userRepository.findByEmail(request.getEmail())
                     .orElseThrow(() -> {
                         logger.warn("User not found during login: {}", request.getEmail());
-                        return new ExceptionResponseDTO("Usuário não encontrado");
+                        return new ExceptionResponse("Usuário não encontrado");
                     });
 
             UserDetails userDetails = createUserDetails(user);
@@ -89,7 +89,7 @@ public class AuthService {
         try {
             if (userRepository.existsByEmail(request.getEmail())) {
                 logger.warn("Email already in use during registration: {}", request.getEmail());
-                throw new ExceptionResponseDTO("Email já está em uso");
+                throw new ExceptionResponse("Email já está em uso");
             }
 
             User user = User.builder()
@@ -124,7 +124,7 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     logger.warn("User not found in context: {}", email);
-                    return new ExceptionResponseDTO("Usuário não encontrado");
+                    return new ExceptionResponse("Usuário não encontrado");
                 });
 
         return UserDTO.fromEntity(user);

@@ -1,6 +1,6 @@
 package com.simplesdental.product.service;
 
-import com.simplesdental.product.dto.ExceptionResponseDTO;
+import com.simplesdental.product.dto.ExceptionResponse;
 import com.simplesdental.product.dto.PaginationDTO;
 import com.simplesdental.product.dto.ProductDTO;
 import com.simplesdental.product.model.Product;
@@ -79,7 +79,7 @@ public class ProductService {
 
             if (product.getCode() != null && productRepository.existsByCode(product.getCode())) {
                 LoggingService.logWithField(logger, "WARN", "Product with duplicate code", "code", product.getCode());
-                throw new ExceptionResponseDTO("Produto com o código '" + product.getCode() + "' já existe.");
+                throw new ExceptionResponse("Produto com o código '" + product.getCode() + "' já existe.");
             }
 
             if (product.getStatus() == null) {
@@ -118,7 +118,7 @@ public class ProductService {
             Optional<Product> existingProductOpt = productRepository.findById(id);
             if (!existingProductOpt.isPresent()) {
                 LoggingService.logWithField(logger, "WARN", "Product not found for update", "productId", id);
-                throw new ExceptionResponseDTO("Produto não encontrado com ID: " + id);
+                throw new ExceptionResponse("Produto não encontrado com ID: " + id);
             }
 
             Product existingProduct = existingProductOpt.get();
@@ -132,7 +132,7 @@ public class ProductService {
                                 "existingCode", existingProduct.getCode(),
                                 "newCode", product.getCode()
                         ));
-                throw new ExceptionResponseDTO("Produto com o código '" + product.getCode() + "' já existe.");
+                throw new ExceptionResponse("Produto com o código '" + product.getCode() + "' já existe.");
             }
 
             product.setId(id);

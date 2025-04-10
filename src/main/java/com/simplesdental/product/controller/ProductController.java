@@ -1,12 +1,15 @@
 package com.simplesdental.product.controller;
 
-import com.simplesdental.product.dto.ExceptionResponseDTO;
+import com.simplesdental.product.dto.ExceptionResponse;
 import com.simplesdental.product.dto.PaginationDTO;
 import com.simplesdental.product.dto.ProductDTO;
 import com.simplesdental.product.model.Product;
 import com.simplesdental.product.service.LoggingService;
 import com.simplesdental.product.service.ProductService;
 import com.simplesdental.product.utils.PaginationUtils;
+import com.simplesdental.product.utils.doc.ProductApiResponses.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/products")
+@Tag(name = "Produtos", description = "Gerenciamento de produtos")
 public class ProductController {
 
     private final ProductService productService;
@@ -31,24 +35,18 @@ public class ProductController {
     }
 
     @GetMapping
+    @Operation(summary = "Listar produtos", description = "Retorna uma lista paginada de produtos")
+    @SwaggerResponseGetAll
     public PaginationDTO<ProductDTO> getAllProducts(
             @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("Getting all products with pagination: {}", pageable);
-        }
-
-        Page<ProductDTO> productDtoPage = productService.findAll(pageable)
-                .map(ProductDTO::fromEntity);
-
+        Page<ProductDTO> productDtoPage = productService.findAll(pageable).map(ProductDTO::fromEntity);
         return PaginationUtils.createPaginationDTO(productDtoPage);
     }
 
     @GetMapping("/{id}")
+    @Operation(summary = "Buscar produto por ID", description = "Retorna os dados de um produto pelo seu identificador")
+    @SwaggerResponseGetById
     public ResponseEntity<Product> getProductById(@PathVariable Long id) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("Getting product by ID: {}", id);
-        }
-
         return productService.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
@@ -56,66 +54,64 @@ public class ProductController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<?> createProduct(@Valid @RequestBody ProductDTO productDTO) {
-        logger.info("Creating new product: {}", productDTO.getName());
-
+    @Operation(summary = "Criar produto", description = "Cria um novo produto com os dados fornecidos")
+    @SwaggerResponseCreate
+    public ResponseEntity<?> createProduct(
+            @Valid
+            @RequestBody
+            ProductDTO productDTO
+    ) {
         try {
             Product product = productDTO.toEntity();
             Product savedProduct = productService.save(product);
-
             ProductDTO responseDTO = ProductDTO.fromEntityWithoutCategory(savedProduct);
-            logger.info("Product created successfully: {}", savedProduct.getId());
-
             return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
-        } catch (ExceptionResponseDTO e) {
-            logger.warn("Product creation failed: {} - {}", productDTO.getName(), e.getMessage());
+        } catch (ExceptionResponse e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            logger.error("Product creation error: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Erro interno: " + e.getMessage());
         }
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateProduct(@PathVariable Long id, @Valid @RequestBody Product product) {
-        logger.info("Updating product: {}", id);
-
+    @Operation(summary = "Atualizar produto", description = "Atualiza os dados de um produto existente")
+    @SwaggerResponseUpdate
+    public ResponseEntity<?> updateProduct(
+            @PathVariable Long id,
+            @Valid
+            @RequestBody
+            Product product
+    ) {
         try {
             Product updatedProduct = productService.update(id, product);
-            logger.info("Product updated successfully: {}", id);
             return ResponseEntity.ok(ProductDTO.fromEntityWithoutCategory(updatedProduct));
-        } catch (ExceptionResponseDTO e) {
-            logger.warn("Product update failed: {} - {}", id, e.getMessage());
+        } catch (ExceptionResponse e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            logger.error("Product update error: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Erro interno: " + e.getMessage());
         }
     }
 
     @DeleteMapping("/{id}")
+    @Operation(summary = "Excluir produto", description = "Remove um produto do sistema pelo ID")
+    @SwaggerResponseDelete
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
-        logger.info("Deleting product: {}", id);
-
         return productService.findById(id)
                 .map(product -> {
                     productService.deleteById(id);
-                    logger.info("Product deleted successfully: {}", id);
                     return ResponseEntity.noContent().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/categories/{categoryId}")
+    @Operation(summary = "Listar produtos por categoria", description = "Retorna produtos pertencentes à categoria informada")
+    @SwaggerResponseGetByCategory
     public PaginationDTO<ProductDTO> getProductsByCategory(
             @PathVariable Long categoryId,
             @PageableDefault(page = 0, size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        if (logger.isDebugEnabled()) {
-            logger.debug("Getting products by category: {}", categoryId);
-        }
-
         return productService.findByCategoryIdPaginated(categoryId, pageable);
     }
 }
