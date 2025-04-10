@@ -65,14 +65,14 @@ public class ProductServiceTest {
 
     @Test
     void shouldGetProductById() {
-        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+        when(productRepository.findByIdWithCategory(1L)).thenReturn(Optional.of(product));
 
         Optional<Product> foundProduct = productService.findById(1L);
 
         assertThat(foundProduct).isPresent();
         assertThat(foundProduct.get().getId()).isEqualTo(1L);
         assertThat(foundProduct.get().getName()).isEqualTo("Test Product");
-        verify(productRepository, times(1)).findById(1L);
+        verify(productRepository, times(1)).findByIdWithCategory(1L);
     }
 
     @Test

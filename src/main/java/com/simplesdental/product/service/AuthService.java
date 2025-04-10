@@ -10,6 +10,7 @@ import com.simplesdental.product.repository.UserRepository;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -73,11 +74,11 @@ public class AuthService {
 
             return new AuthResponseDTO(jwtToken, UserDTO.fromEntity(user));
 
+        } catch (BadCredentialsException e) {
+            throw e;
         } catch (Exception e) {
             LoggingService.logError(logger, "user_login", e);
-            throw e;
-        } finally {
-            LoggingService.endOperation(logger, "user_login", startTime);
+            throw new RuntimeException("Erro ao tentar realizar login", e);
         }
     }
 

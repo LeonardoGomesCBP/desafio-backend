@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -52,6 +53,22 @@ public class ValidationExceptionHandler {
 
         return new ResponseEntity<>(body, HttpStatus.CONFLICT);
     }
+
+    @ExceptionHandler(org.springframework.security.authentication.BadCredentialsException.class)
+    public ResponseEntity<Object> handleBadCredentials(BadCredentialsException ex, WebRequest request) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("error", "Unauthorized");
+        body.put("message", "Credenciais inválidas");
+
+        String path = request.getDescription(false).replace("uri=", "");
+        body.put("path", path);
+
+        logger.warn("Bad credentials: {} - path: {}", ex.getMessage(), path);
+
+        return new ResponseEntity<>(body, HttpStatus.UNAUTHORIZED);
+    }
+
 
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
