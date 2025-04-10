@@ -1,3 +1,8 @@
+Para facilitar a execução do projeto, recomendo utilizar o Docker Compose com o comando docker compose up --build. Isso vai levantar automaticamente o Redis e o banco de dados, além de popular as tabelas com dados iniciais sem que você precise se preocupar com configurações manuais.
+
+Também incluí uma coleção e um ambiente do Postman prontos para uso. Eles estão na raiz do projeto e podem ser importados diretamente no Postman. O ambiente foi configurado para capturar automaticamente o token gerado no login ou registro e aplicá-lo na autorização da maioria das requisições, tornando os testes corriqueiros mais fáceis.
+
+Ou, se preferir, acessar o swagger via localhost:8080/swagger-ui/index.html.
 # Desafio Backend - Requisitos
 
 ## 1. Validações
@@ -68,13 +73,26 @@ Você deve ajustar as entidades (model e sql) de acordo com as regras abaixo:
 # Perguntas
 
 1. **Se tivesse a oportunidade de criar o projeto do zero ou refatorar o projeto atual, qual arquitetura você utilizaria e por quê?**
-2. **Qual é a melhor estratégia para garantir a escalabilidade do código mantendo o projeto organizado?**  
+   R. Eu adotaria uma arquitetura de microsserviços, pois ela permite escalar e implantar componentes de forma independente. Em paralelo, consideraria começar com um monólito modular bem estruturado por domínios de negócio, facilitando uma futura migração gradual para microsserviços conforme o sistema cresça.
+2. **Qual é a melhor estratégia para garantir a escalabilidade do código mantendo o projeto organizado?**
+   R. A melhor estratégia é modularizar o código por domínios de negócio (por exemplo, módulos separados para Produto, Usuário etc.), aplicando princípios SOLID e mantendo uma suíte de testes automatizados. Dessa forma, o projeto permanece organizado e escalável, evitando dependências excessivas entre módulos.
 3. **Quais estratégias poderiam ser utilizadas para implementar multitenancy no projeto?**
+   R. Para isolar dados de clientes diferentes, existem três abordagens principais. A primeira é usar um banco de dados separado para cada tenant, garantindo o máximo de isolamento. A segunda é usar um schema separado dentro do mesmo banco de dados para cada cliente. Por fim, uma opção mais simples seria usar uma coluna de "tenant_id" em tabelas compartilhadas, onde todos os tenants compartilham o mesmo banco e schema, mas com dados isolados por esse identificador.
 4. **Como garantir a resiliência e alta disponibilidade da API durante picos de tráfego e falhas de componentes?**
+   R. Para garantir resiliência e alta disponibilidade da API, uma estratégia fundamental seria o escalonamento horizontal, onde múltiplas instâncias da API são executadas simultaneamente e balanceadas por um load balancer. Usar padrões como Circuit Breaker e timeout para garantir que falhas em componentes externos não afetem o sistema como um todo é essencial. Além disso, um sistema de cache distribuído, como o Redis, alivia a carga no banco de dados durante picos de uso, e o monitoramento contínuo com alertas ajuda a detectar e corrigir falhas rapidamente.
 5. **Quais práticas de segurança essenciais você implementaria para prevenir vulnerabilidades como injeção de SQL e XSS?**
-5. **Qual a abordagem mais eficaz para estruturar o tratamento de exceções de negócio, garantindo um fluxo contínuo desde sua ocorrência até o retorno da API?**
-5. **Considerando uma aplicação composta por múltiplos serviços, quais componentes você considera essenciais para assegurar sua robustez e eficiência?**
-6. **Como você estruturaria uma pipeline de CI/CD para automação de testes e deploy, assegurando entregas contínuas e confiáveis?**
+   R. Para prevenir SQL Injection, eu usaria sempre consultas parametrizadas ou ORMs (evitando concatenar dados diretamente em queries) e faria validação rigorosa de entrada de dados (por exemplo, com Bean Validation). Já para mitigar XSS, adotaria a sanitização de entradas e saídas e configuraria cabeçalhos HTTP de segurança adequados (como Content-Security-Policy e X-XSS-Protection), garantindo que scripts maliciosos não sejam executados no cliente.
+
+6. **Qual a abordagem mais eficaz para estruturar o tratamento de exceções de negócio, garantindo um fluxo contínuo desde sua ocorrência até o retorno da API?**
+   R. O tratamento de exceções de negócios deve ser centralizado usando @ControllerAdvice, o que permite capturar as exceções e retornar respostas padronizadas e claras para o cliente da API. Lançar exceções específicas, como BusinessException, ajuda a identificar falhas de negócio e gerar mensagens apropriadas. A geração de logs detalhados também é importante para facilitar o diagnóstico de problemas.
+
+
+7. **Considerando uma aplicação composta por múltiplos serviços, quais componentes você considera essenciais para assegurar sua robustez e eficiência?**
+   R. Em uma arquitetura composta por múltiplos serviços, alguns componentes essenciais incluem um API Gateway, que atua como ponto único de entrada e pode gerenciar autenticação e roteamento de requisições. A descoberta de serviços é importante para permitir que os microsserviços localizem uns aos outros de maneira dinâmica. A comunicação assíncrona por meio de mensageria, usando ferramentas como RabbitMQ ou Kafka, pode reduzir o acoplamento entre os serviços e melhorar a performance. Também é necessário um sistema de monitoramento centralizado, como o ELK Stack, para coletar logs e métricas de todos os serviços de forma integrada.
+
+8. **Como você estruturaria uma pipeline de CI/CD para automação de testes e deploy, assegurando entregas contínuas e confiáveis?**
+   R. Eu estruturaria a pipeline de CI/CD com build e testes automatizados a cada commit, garantindo que todo novo código passe pelos testes unitários e de integração antes de ser integrado. Também integraria ao processo ferramentas de análise de qualidade de código (como SonarQube). Em seguida, automatizaria o deploy contínuo em staging e produção usando contêineres Docker, o que facilita a padronização e portabilidade dos ambientes. Por fim, implementaria um mecanismo de rollback automático para reverter rapidamente em caso de falhas, e monitoraria cada release com logs e alertas para obter feedback imediato da saúde da aplicação.
+
 
 Obs: Forneça apenas respostas textuais; não é necessário implementar as perguntas acima.
 
