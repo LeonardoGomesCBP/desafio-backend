@@ -66,7 +66,7 @@ public class ProductService {
             @CacheEvict(value = "productsPaginated", allEntries = true),
             @CacheEvict(value = "productsByCategory", allEntries = true)
     })
-    public Product save(Product product) throws Exception {
+    public Product save(Product product) {
         long startTime = System.currentTimeMillis();
         String operationId = LoggingService.startOperation(logger, "product_save");
 
@@ -98,7 +98,12 @@ public class ProductService {
 
         } catch (Exception e) {
             LoggingService.logError(logger, "product_save", e);
-            throw e;
+
+            if (e instanceof ExceptionResponse) {
+                throw e;
+            }
+
+            throw new ExceptionResponse("Erro ao salvar o produto: " + e.getMessage());
         } finally {
             LoggingService.endOperation(logger, "product_save", startTime);
         }

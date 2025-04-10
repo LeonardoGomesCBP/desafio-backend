@@ -1,5 +1,6 @@
 package com.simplesdental.product.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.simplesdental.product.model.Category;
 import com.simplesdental.product.model.Product;
 import lombok.AllArgsConstructor;
@@ -9,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -24,9 +26,13 @@ public class ProductDTO implements Serializable {
     private Long categoryId;
     private Category category;
 
-    /**
-     * Construtor específico para o método fromEntityWithoutCategory
-     */
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", timezone = "UTC")
+    private Instant createdAt;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", timezone = "UTC")
+    private Instant updatedAt;
+
+
     public ProductDTO(
             Long id,
             String name,
@@ -34,7 +40,9 @@ public class ProductDTO implements Serializable {
             BigDecimal price,
             String code,
             Long categoryId,
-            Boolean status
+            Boolean status,
+            Instant createdAt,
+            Instant updatedAt
     ) {
         this.id = id;
         this.name = name;
@@ -43,8 +51,9 @@ public class ProductDTO implements Serializable {
         this.code = code;
         this.categoryId = categoryId;
         this.status = status;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
-
     /**
      * Converts from Product to ProductDTO including the complete category
      */
@@ -56,6 +65,8 @@ public class ProductDTO implements Serializable {
         dto.setPrice(product.getPrice());
         dto.setCode(product.getCode() != null ? "PROD-" + String.format("%03d", product.getCode()) : null);
         dto.setStatus(product.getStatus());
+        dto.setCreatedAt(product.getCreatedAt());
+        dto.setUpdatedAt(product.getLastModifiedDate());
 
         if (product.getCategory() != null) {
             dto.setCategoryId(product.getCategory().getId());
@@ -76,13 +87,12 @@ public class ProductDTO implements Serializable {
                 product.getPrice(),
                 product.getCode() != null ? "PROD-" + String.format("%03d", product.getCode()) : null,
                 product.getCategory() != null ? product.getCategory().getId() : null,
-                product.getStatus()
+                product.getStatus(),
+                product.getCreatedAt(),
+                product.getLastModifiedDate()
         );
     }
 
-    /**
-     * Converts from ProductDTO to Product
-     */
     public Product toEntity() {
         Product product = new Product();
         product.setId(this.id);

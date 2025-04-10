@@ -1,5 +1,6 @@
 package com.simplesdental.product.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.simplesdental.product.model.Category;
 import com.simplesdental.product.model.Product;
@@ -8,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -23,6 +25,26 @@ public class ProductV2DTO {
     private Category category;
     private Long categoryId;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", timezone = "UTC")
+    private Instant createdAt;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", timezone = "UTC")
+    private Instant updatedAt;
+
+    public ProductV2DTO(Long id, String name, String description, BigDecimal price,
+                        Integer code, Boolean status, Category category, Instant createdAt, Instant updatedAt) {
+        this.id = id;
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.code = code;
+        this.status = status;
+        this.category = category;
+        this.categoryId = category != null ? category.getId() : null;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
+
     /**
      * Converts from Product to ProductV2DTO including the complete category
      */
@@ -34,22 +56,15 @@ public class ProductV2DTO {
                 product.getPrice(),
                 product.getCode(),
                 product.getStatus(),
-                product.getCategory()
+                product.getCategory(),
+                product.getCreatedAt(),
+                product.getLastModifiedDate()
         );
     }
 
-    public ProductV2DTO(Long id, String name, String description, BigDecimal price,
-                        Integer code, Boolean status, Category category) {
-        this.id = id;
-        this.name = name;
-        this.description = description;
-        this.price = price;
-        this.code = code;
-        this.status = status;
-        this.category = category;
-        this.categoryId = category != null ? category.getId() : null;
-    }
-
+    /**
+     * Converts from Product to ProductDTO without including the complete category (only the ID)
+     */
     public static ProductV2DTO fromEntityWithoutCategory(Product product) {
         ProductV2DTO dto = new ProductV2DTO();
         dto.setId(product.getId());
@@ -58,6 +73,8 @@ public class ProductV2DTO {
         dto.setPrice(product.getPrice());
         dto.setCode(product.getCode());
         dto.setStatus(product.getStatus());
+        dto.setCreatedAt(product.getCreatedAt());
+        dto.setUpdatedAt(product.getLastModifiedDate());
 
         if (product.getCategory() != null) {
             dto.setCategoryId(product.getCategory().getId());
@@ -66,9 +83,6 @@ public class ProductV2DTO {
         return dto;
     }
 
-    /**
-     * Converts from ProductV2DTO to Product
-     */
     public Product toEntity() {
         Product product = new Product();
         product.setId(this.id);

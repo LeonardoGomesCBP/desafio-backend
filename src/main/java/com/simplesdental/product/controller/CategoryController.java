@@ -1,5 +1,6 @@
 package com.simplesdental.product.controller;
 
+import com.simplesdental.product.dto.CategoryDTO;
 import com.simplesdental.product.utils.doc.CategoryApiResponses.*;
 import com.simplesdental.product.dto.PaginationDTO;
 import com.simplesdental.product.model.Category;
@@ -56,22 +57,22 @@ public class CategoryController {
     ) {
         return categoryService.save(category);
     }
-
     @PutMapping("/{id}")
     @Operation(summary = "Atualizar uma categoria existente", description = "Atualiza os dados de uma categoria existente pelo ID")
     @SwaggerResponseUpdateSuccess
     @SwaggerResponseValidationError
     @SwaggerResponseNotFound
-    public ResponseEntity<Category> updateCategory(
+    public ResponseEntity<CategoryDTO> updateCategory(
             @PathVariable Long id,
             @Valid
-            @RequestBody
-            Category category
+            @RequestBody Category category
     ) {
         return categoryService.findById(id)
                 .map(existingCategory -> {
                     category.setId(id);
-                    return ResponseEntity.ok(categoryService.save(category));
+                    Category updated = categoryService.save(category);
+                    CategoryDTO dto = new CategoryDTO(updated.getId(), updated.getName(), updated.getDescription());
+                    return ResponseEntity.ok(dto);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }

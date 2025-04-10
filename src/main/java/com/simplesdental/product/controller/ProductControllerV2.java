@@ -55,44 +55,28 @@ public class ProductControllerV2 {
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Criar produto (v2)", description = "Cria um novo produto com os dados fornecidos - versão 2")
     @SwaggerResponseCreate
-    public ResponseEntity<?> createProduct(
-            @Valid
-            @RequestBody
-            ProductV2DTO productDTO
+    public ResponseEntity<ProductV2DTO> createProduct(
+            @Valid @RequestBody ProductV2DTO productDTO
     ) {
-        try {
-            Product product = productDTO.toEntity();
-            Product savedProduct = productService.save(product);
-            ProductV2DTO responseDTO = ProductV2DTO.fromEntityWithoutCategory(savedProduct);
-            return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
-        } catch (ExceptionResponse e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Erro interno: " + e.getMessage());
-        }
+        Product product = productDTO.toEntity();
+        Product savedProduct = productService.save(product);
+        ProductV2DTO responseDTO = ProductV2DTO.fromEntityWithoutCategory(savedProduct);
+        return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
     }
+
 
     @PutMapping("/{id}")
     @Operation(summary = "Atualizar produto (v2)", description = "Atualiza os dados de um produto existente - versão 2")
     @SwaggerResponseUpdate
-    public ResponseEntity<?> updateProduct(
+    public ResponseEntity<ProductV2DTO> updateProduct(
             @PathVariable Long id,
-            @Valid
-            @RequestBody
-            ProductV2DTO productDTO
-    ) {
-        try {
-            Product product = productDTO.toEntity();
-            Product updatedProduct = productService.update(id, product);
-            return ResponseEntity.ok(ProductV2DTO.fromEntityWithoutCategory(updatedProduct));
-        } catch (ExceptionResponse e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Erro interno: " + e.getMessage());
-        }
+            @Valid @RequestBody ProductV2DTO productDTO
+    ) throws Exception {
+        Product product = productDTO.toEntity();
+        Product updatedProduct = productService.update(id, product);
+        return ResponseEntity.ok(ProductV2DTO.fromEntityWithoutCategory(updatedProduct));
     }
+
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Excluir produto (v2)", description = "Remove um produto do sistema pelo ID - versão 2")
