@@ -1,7 +1,7 @@
 {
 	"info": {
 		"_postman_id": "bab6ef01-a517-406b-ae3d-b806fcbcf21e",
-		"name": "Dente Simples Backend Desafio",
+		"name": "Simples Dental Backend Desafio",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "30984689"
 	},
@@ -664,7 +664,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n    \"currentPassword\": \"crazyshit\",\n    \"newPassword\": \"KMbT%5wT*R!46i@@YHqx\"\n}"
+							"raw": "{\n    \"currentPassword\": \"senhateste123@\",\n    \"newPassword\": \"KMbT%5wT*R!46i@@YHqx\"\n}"
 						},
 						"url": {
 							"raw": "{{baseUrl}}/auth/password",
